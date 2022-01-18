@@ -8,7 +8,6 @@ dataset/
 *.xml
 *.pth
 *.npe
-run/
 run_ETTh/
 run_financial/
 checkpoints/
