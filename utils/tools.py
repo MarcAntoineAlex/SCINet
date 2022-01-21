@@ -2,6 +2,9 @@
 import os
 import numpy as np
 import torch
+from torch.utils.data import Sampler
+from random import shuffle
+import torch.distributed as dist
 
 def save_model(epoch, lr, model, model_dir, model_name='pems08', horizon=12):
     if model_dir is None:
@@ -109,3 +112,24 @@ class StandardScaler():
         mean = torch.from_numpy(self.mean).type_as(data).to(data.device) if torch.is_tensor(data) else self.mean
         std = torch.from_numpy(self.std).type_as(data).to(data.device) if torch.is_tensor(data) else self.std
         return (data * std) + mean
+
+class MyDefiniteSampler(Sampler):
+    def __init__(self, indice, device=None):
+        self.indice = indice
+        self.device = device
+
+    def __iter__(self):
+        shuffle(self.indice)
+        print("shuffling", self.indice[:200])
+        if self.device is not None:
+            tensor_indices = torch.tensor(self.indice).to(self.device)
+            dist.broadcast(tensor_indices, 0)
+            self.indice = tensor_indices.tolist()
+        return iter(self.indice)
+
+    def __len__(self):
+        return len(self.indice)
+
+def sigtemp(x, temp):
+    return 1/(1+torch.exp(-temp * x))
+
